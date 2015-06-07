@@ -14,7 +14,6 @@ import play.Logger;
 import play.Play;
 import play.Play.Mode;
 import play.libs.IO;
-import play.server.ssl.SslHttpServerPipelineFactory;
 
 public class Server {
 
@@ -98,32 +97,7 @@ public class Server {
                 Executors.newCachedThreadPool(), Executors.newCachedThreadPool())
         );
 
-        try {
-            if (httpsPort != -1) {
-                bootstrap.setPipelineFactory(new SslHttpServerPipelineFactory());
-                bootstrap.bind(new InetSocketAddress(secureAddress, httpsPort));
-                bootstrap.setOption("child.tcpNoDelay", true);
-
-                if (Play.mode == Mode.DEV) {
-                    if (secureAddress == null) {
-                        Logger.info("Listening for HTTPS on port %s (Waiting a first request to start) ...", httpsPort);
-                    } else {
-                        Logger.info("Listening for HTTPS at %2$s:%1$s (Waiting a first request to start) ...", httpsPort, secureAddress);
-                    }
-                } else {
-                    if (secureAddress == null) {
-                        Logger.info("Listening for HTTPS on port %s ...", httpsPort);
-                    } else {
-                        Logger.info("Listening for HTTPS at %2$s:%1$s  ...", httpsPort, secureAddress);
-                    }
-                }
-
-            }
-
-        } catch (ChannelException e) {
-            Logger.error("Could not bind on port " + httpsPort, e);
-            Play.fatalServerErrorOccurred();
-        }
+    
         if (Play.mode == Mode.DEV || Play.runingInTestMode()) {
            // print this line to STDOUT - not using logger, so auto test runner will not block if logger is misconfigured (see #1222)     
            System.out.println("~ Server is up and running");

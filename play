@@ -47,12 +47,7 @@ try:
 
     if showLogo:
         # ~~~~~~~~~~~~~~~~~~~~~~ Display logo
-        print r"~        _            _ "
-        print r"~  _ __ | | __ _ _  _| |"
-        print r"~ | '_ \| |/ _' | || |_|"
-        print r"~ |  __/|_|\____|\__ (_)"
-        print r"~ |_|            |__/   "
-        print r"~"
+        print r"-------------------------------------------"
     else:
         sys.argv.remove("--silent")
 
