@@ -23,6 +23,7 @@ public abstract class PlayException extends RuntimeException {
     	String errorMonitorigType = p.getProperty("errormonitoring.type","none");
     	//Logger.error("Error Monitoring: "+ errorMonitorigType);
     	if(errorMonitorigType.equalsIgnoreCase("email")){
+    		if(reportErrorIgnore(stackTrace)) return;
     		Logger.error("Sending error monitoring email "+getId());
         	try{
     			SimpleEmail emailer = new SimpleEmail();
@@ -42,6 +43,12 @@ public abstract class PlayException extends RuntimeException {
     		
     		
     	}
+    }
+    boolean reportErrorIgnore(String stackTrace){
+    	if(stackTrace==null) stackTrace="";
+    	if(getErrorTitle().equals("Oops: IllegalStateException") && stackTrace.startsWith("java.lang.IllegalStateException: Error when handling upload")) return true;
+    	
+    	return false;
     }
 
     public PlayException() {

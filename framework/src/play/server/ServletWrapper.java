@@ -22,6 +22,7 @@ import play.mvc.Router;
 import play.mvc.Scope;
 import play.mvc.results.NotFound;
 import play.mvc.results.RenderStatic;
+import play.server.Throttle.Result;
 import play.templates.TemplateLoader;
 import play.utils.Utils;
 import play.vfs.VirtualFile;
@@ -49,10 +50,43 @@ import static org.apache.commons.io.IOUtils.closeQuietly;
  * Thanks to Lee Breisacher.
  */
 public class ServletWrapper extends HttpServlet implements ServletContextListener {
+	
+	private static final Throttle throttle =  new Throttle(100,Throttle.Timespan.Hour);
 
+	private static boolean ignoreError(Exception e, Scope.Session s, Http.Request r, Scope.Flash f, Scope.Params p, boolean is500){
+		String url = r.url.trim().toLowerCase();
+		int i = url.indexOf('?');
+		String obj=i>-1?url.substring(0, i):url;
+		String qry=i>-1?url.substring(i+1):"";
+		
+		if(!is500){
+			//404
+			if(url.equals("/_stax/status")) return true;
+			String[] endings = new String[]{
+				"php","css","js","jsp","asp","htm","html","ico","jpeg","jpg","gif","png","tiff","pdf"	
+			};
+			for(String ending:endings) if(obj.endsWith("."+ending)) return true;
+			
+			String[] contains = new String[]{
+					"cgi","-bin","php","mysql"
+			};
+			for(String cnts:contains) if(url.contains(cnts)) return true;			
+		} else {
+			//500
+			if(e.getLocalizedMessage().equals("Unexpected Error") && url.equals("/files/upload")) return true;
+			
+			
+		}
+		return false;
+	}
 	//Play/server/ServletWrapper.java called from serve500 and serve404
-	private static void reportError(Exception e, Scope.Session s, Http.Request r, Scope.Flash f, Scope.Params p){
-    	String eId = "";
+	private static void reportError(Exception e, Scope.Session s, Http.Request r, Scope.Flash f, Scope.Params p, boolean is500){
+    	if( ignoreError(e,s,r,f,p,is500)) return;
+		
+		Result tr = throttle.get();
+		if(!tr.get()) return;
+    	
+		String eId = "";
 		//if(e instanceof PlayException) eId=((PlayException) e).getId();
 		StringBuilder m = new StringBuilder();
     	m.append(e.getLocalizedMessage()+"\n\n");
@@ -104,7 +138,7 @@ public class ServletWrapper extends HttpServlet implements ServletContextListene
 	    			emailer.setMsg(m.toString());
 	    			emailer.setFrom(prop.getProperty("errormonitoring.emailfrom",""));
 	    			emailer.addTo(prop.getProperty("errormonitoring.emailto",""));
-	    			emailer.setSubject(prop.getProperty("application.name","Play!")+" Error "+eId);
+	    			emailer.setSubject(prop.getProperty("application.name","Play!")+" Error "+eId+((tr==Throttle.Result.Last)?" Next Error and 404 Monitoring Emails Throttled for this Hour":""));
 	    			emailer.send();
 	        	}
 	        	catch (EmailException e1){
@@ -448,7 +482,7 @@ public class ServletWrapper extends HttpServlet implements ServletContextListene
         } catch (Exception fex) {
             Logger.error(fex, "(encoding ?)");
         }
-        reportError(e,Scope.Session.current(),Http.Request.current(),Scope.Flash.current(),Scope.Params.current());
+        reportError(e,Scope.Session.current(),Http.Request.current(),Scope.Flash.current(),Scope.Params.current(),false);
     }
 
     public void serve500(Exception e, HttpServletRequest request, HttpServletResponse response) {
@@ -502,15 +536,15 @@ public class ServletWrapper extends HttpServlet implements ServletContextListene
                 String errorHtml = TemplateLoader.load("errors/500." + format).render(binding);
                 response.getOutputStream().write(errorHtml.getBytes(Response.current().encoding));
                 Logger.error(e, "Internal Server Error (500)");
-                reportError(e,Scope.Session.current(),Http.Request.current(),Scope.Flash.current(),Scope.Params.current());
+                reportError(e,Scope.Session.current(),Http.Request.current(),Scope.Flash.current(),Scope.Params.current(),true);
             } catch (Throwable ex) {
                 Logger.error(e, "Internal Server Error (500)");
                 Logger.error(ex, "Error during the 500 response generation");
-                reportError(e,Scope.Session.current(),Http.Request.current(),Scope.Flash.current(),Scope.Params.current());
+                reportError(e,Scope.Session.current(),Http.Request.current(),Scope.Flash.current(),Scope.Params.current(),true);
                 throw ex;
             }
         } catch (Throwable exxx) {
-        	reportError(e,Scope.Session.current(),Http.Request.current(),Scope.Flash.current(),Scope.Params.current());
+        	reportError(e,Scope.Session.current(),Http.Request.current(),Scope.Flash.current(),Scope.Params.current(),true);
             if (exxx instanceof RuntimeException) {
                 throw (RuntimeException) exxx;
             }
