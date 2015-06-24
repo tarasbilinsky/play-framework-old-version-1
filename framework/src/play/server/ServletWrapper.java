@@ -68,9 +68,15 @@ public class ServletWrapper extends HttpServlet implements ServletContextListene
 			for(String ending:endings) if(obj.endsWith("."+ending)) return true;
 			
 			String[] contains = new String[]{
-					"cgi","-bin","php","mysql"
+					"cgi","-bin","php","mysql",
+					"muieblackcat", 
 			};
-			for(String cnts:contains) if(url.contains(cnts)) return true;			
+			for(String cnts:contains) if(url.contains(cnts)) return true;
+			
+			String[] eqs = new String[]{
+					"/index.action",	
+			};
+			for(String eq:eqs) if(url.equalsIgnoreCase(eq)) return true;
 		} else {
 			//500
 			if(e.getLocalizedMessage().equals("Unexpected Error") && url.equals("/files/upload")) return true;
