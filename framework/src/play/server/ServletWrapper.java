@@ -74,7 +74,7 @@ public class ServletWrapper extends HttpServlet implements ServletContextListene
 			for(String cnts:contains) if(url.contains(cnts)) return true;
 			
 			String[] eqs = new String[]{
-					"/index.action",	
+					"/index.action", "/manager/html","/headers"
 			};
 			for(String eq:eqs) if(url.equalsIgnoreCase(eq)) return true;
 		} else {
@@ -144,7 +144,7 @@ public class ServletWrapper extends HttpServlet implements ServletContextListene
 	    			emailer.setMsg(m.toString());
 	    			emailer.setFrom(prop.getProperty("errormonitoring.emailfrom",""));
 	    			emailer.addTo(prop.getProperty("errormonitoring.emailto",""));
-	    			emailer.setSubject(prop.getProperty("application.name","Play!")+" Error "+eId+((tr==Throttle.Result.Last)?" Next Error and 404 Monitoring Emails Throttled for this Hour":""));
+	    			emailer.setSubject(prop.getProperty("application.name","Play!")+" Error "+(is500?"500 ":"404 ")+eId+((tr==Throttle.Result.Last)?" Next Error and Not Found Monitoring Emails [TTA Throttled] for this Hour":""));
 	    			emailer.send();
 	        	}
 	        	catch (EmailException e1){
