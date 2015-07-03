@@ -70,6 +70,7 @@ public class ServletWrapper extends HttpServlet implements ServletContextListene
 			String[] contains = new String[]{
 					"cgi","-bin","php","mysql",
 					"muieblackcat", 
+					"data:image/jpeg;base64"
 			};
 			for(String cnts:contains) if(url.contains(cnts)) return true;
 			
