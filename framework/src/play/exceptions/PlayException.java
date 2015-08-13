@@ -34,7 +34,7 @@ public abstract class PlayException extends RuntimeException {
     			emailer.setMsg("Error "+getId()+"\n"+getErrorTitle()+"\n"+getErrorDescription()+"\n\n"+stackTrace);
     			emailer.setFrom(p.getProperty("errormonitoring.emailfrom",""));
     			emailer.addTo(p.getProperty("errormonitoring.emailto",""));
-    			emailer.setSubject(p.getProperty("application.name","Play!")+" Error " + getId());
+    			emailer.setSubject(p.getProperty("application.name","Play!")+" Error ID" + getId());
     			emailer.send();
         	}
         	catch (EmailException e){

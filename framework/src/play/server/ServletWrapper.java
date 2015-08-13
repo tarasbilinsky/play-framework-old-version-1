@@ -86,56 +86,99 @@ public class ServletWrapper extends HttpServlet implements ServletContextListene
 		}
 		return false;
 	}
+	
+	private static String printStackTrace(Exception e){
+		try{
+		 StringWriter stack = new StringWriter();
+		 e.printStackTrace(new PrintWriter(stack)); 
+		 return stack.toString();
+		} catch(Exception e2){
+			 return "";
+		 }
+	}
+	
 	//Play/server/ServletWrapper.java called from serve500 and serve404
-	private static void reportError(Exception e, Scope.Session s, Http.Request r, Scope.Flash f, Scope.Params p, boolean is500){
-    	if( ignoreError(e,s,r,f,p,is500)) return;
+	private static void reportError(Exception e, play.mvc.Scope.Session s, play.mvc.Http.Request r, play.mvc.Scope.Flash f, play.mvc.Scope.Params p, boolean is500){
 		
-		Result tr = throttle.get();
-		if(!tr.get()) return;
+		Result tr = Result.Ok;
+		
+		StringBuilder m0 = new StringBuilder();
+		try{		
+			if( ignoreError(e,s,r,f,p,is500)) {
+				play.Logger.warn("REPORTERRORCUSTOM report error ignore"); //return; 
+				if(is500) m0.append(" WOULD_BE_IGNORED "); else return;
+			};
+		} catch (Exception e2){
+			m0.append("Exception in ignoreError "+e2.getLocalizedMessage()+"\n"+printStackTrace(e2));
+		}
+		
+
+		
+		try{
+			tr = throttle.get();
+			if(!tr.get()) {
+				play.Logger.warn("REPORTERRORCUSTOM report error throttle");
+				m0.append(" WOULD_BE_THROTTLED ");
+				//return;
+			}
+		} catch (Exception e3){
+			m0.append("Exception in throttle "+e3.getLocalizedMessage()+"\n"+printStackTrace(e3));
+		}
+		
+
     	
 		String eId = "";
 		//if(e instanceof PlayException) eId=((PlayException) e).getId();
 		StringBuilder m = new StringBuilder();
-    	m.append(e.getLocalizedMessage()+"\n\n");
-    	if(s!=null && s.all()!=null){
-    		m.append("Session:\n");
-    		for(String k: s.all().keySet()){
-    			String v = s.all().get(k);
-    			if(v!=null) m.append(k+": "+v+"\n");
-    		}
-    	}
-    	if(r!=null){
-    		m.append("\n\nRequest:\n"+r.url+"\n\n");
-    		if(r.headers!=null){
-    			for(String k: r.headers.keySet()){
-    				m.append(k+": ");
-    				if(r.headers.get(k)!=null){
-    					m.append(r.headers.get(k).name+" ");
-    					for(String v:r.headers.get(k).values){
-    						m.append(v+"\n");
-    	    			}
-    					m.append("\n");
-    				}
-    			}
-    		}
-    	}
-    	if(f!=null){
-    		m.append("Flash:"+f.toString()+"\n");
-    	}
-    	if(p!=null & p.data!=null){
-    		m.append("Params:\n");
-    		for(String k:p.data.keySet()){
-    			m.append(k+": ");
-    			for(String v:p.data.get(k)){
-    				m.append(v+"\n");
-    			}
-    			m.append("\n");
-    		}
-    	}    	
+		m.append(m0).append("\n");
+		
+		try{
+	    	m.append(e.getLocalizedMessage()+"\n\n");
+	    	if(s!=null && s.all()!=null){
+	    		m.append("Session:\n");
+	    		for(String k: s.all().keySet()){
+	    			String v = s.all().get(k);
+	    			if(v!=null) m.append(k+": "+v+"\n");
+	    		}
+	    	}
+	    	if(r!=null){
+	    		m.append("\n\nRequest:\n"+r.url+"\n\n");
+	    		if(r.headers!=null){
+	    			for(String k: r.headers.keySet()){
+	    				m.append(k+": ");
+	    				if(r.headers.get(k)!=null){
+	    					m.append(r.headers.get(k).name+" ");
+	    					for(String v:r.headers.get(k).values){
+	    						m.append(v+"\n");
+	    	    			}
+	    					m.append("\n");
+	    				}
+	    			}
+	    		}
+	    	}
+	    	if(f!=null){
+	    		m.append("Flash:"+f.toString()+"\n");
+	    	}
+	    	if(p!=null & p.data!=null){
+	    		m.append("Params:\n");
+	    		for(String k:p.data.keySet()){
+	    			m.append(k+": ");
+	    			for(String v:p.data.get(k)){
+	    				m.append(v+"\n");
+	    			};
+	    			m.append("\n");
+	    		}
+	    	}
+		} catch (Exception e4){
+			m.append("\nError when getting request details "+e.getLocalizedMessage()+"\n"+printStackTrace(e));
+		}
 	
-    	java.util.Properties prop  = Play.configuration;
+
+		Properties prop  = Play.configuration;
     	String errorMonitorigType = prop.getProperty("errormonitoring.type","none");
+
     	if(errorMonitorigType.equalsIgnoreCase("email")){
+
 	        	try{
 	    			SimpleEmail emailer = new SimpleEmail();
 	    			emailer.setHostName(prop.getProperty("errormonitoring.smtphost","smtp.gmail.com"));
@@ -149,7 +192,7 @@ public class ServletWrapper extends HttpServlet implements ServletContextListene
 	    			emailer.send();
 	        	}
 	        	catch (EmailException e1){
-	        		//
+	        		play.Logger.error("REPORTERRORCUSTOM6 Error sending monitoring email", e1);
 	        	}
     	}
     }		
