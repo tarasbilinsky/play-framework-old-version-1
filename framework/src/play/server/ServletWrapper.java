@@ -51,7 +51,7 @@ import static org.apache.commons.io.IOUtils.closeQuietly;
  */
 public class ServletWrapper extends HttpServlet implements ServletContextListener {
 	
-	private static final Throttle throttle =  new Throttle(100,Throttle.Timespan.Hour);
+	private static final Throttle throttle =  new Throttle(20,Throttle.Timespan.Hour);
 
 	private static boolean ignoreError(Exception e, Scope.Session s, Http.Request r, Scope.Flash f, Scope.Params p, boolean is500){
 		String url = r.url.trim().toLowerCase();
@@ -61,7 +61,8 @@ public class ServletWrapper extends HttpServlet implements ServletContextListene
 		
 		if(!is500){
 			//404
-			if(url.equals("/_stax/status")) return true;
+            return true;
+			/*if(url.equals("/_stax/status")) return true;
 			String[] endings = new String[]{
 				"php","css","js","jsp","asp","htm","html","ico","jpeg","jpg","gif","png","tiff","pdf"	
 			};
@@ -78,6 +79,7 @@ public class ServletWrapper extends HttpServlet implements ServletContextListene
 					"/index.action", "/manager/html","/headers"
 			};
 			for(String eq:eqs) if(url.equalsIgnoreCase(eq)) return true;
+			*/
 		} else {
 			//500
 			if(e.getLocalizedMessage().equals("Unexpected Error") && url.equals("/files/upload")) return true;
@@ -106,7 +108,7 @@ public class ServletWrapper extends HttpServlet implements ServletContextListene
 		try{		
 			if( ignoreError(e,s,r,f,p,is500)) {
 				play.Logger.warn("REPORTERRORCUSTOM report error ignore"); //return; 
-				if(is500) m0.append(" WOULD_BE_IGNORED "); else return;
+				if(is500) {m0.append(" WOUL_BE_IGNORED "); return;} else return;
 			};
 		} catch (Exception e2){
 			m0.append("Exception in ignoreError "+e2.getLocalizedMessage()+"\n"+printStackTrace(e2));
@@ -118,8 +120,8 @@ public class ServletWrapper extends HttpServlet implements ServletContextListene
 			tr = throttle.get();
 			if(!tr.get()) {
 				play.Logger.warn("REPORTERRORCUSTOM report error throttle");
-				m0.append(" WOULD_BE_THROTTLED ");
-				//return;
+				m0.append(" WOUL_BE_THROTTLED ");
+				return;
 			}
 		} catch (Exception e3){
 			m0.append("Exception in throttle "+e3.getLocalizedMessage()+"\n"+printStackTrace(e3));
