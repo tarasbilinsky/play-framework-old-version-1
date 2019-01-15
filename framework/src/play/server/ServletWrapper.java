@@ -54,7 +54,7 @@ public class ServletWrapper extends HttpServlet implements ServletContextListene
 	private static final Throttle throttle =  new Throttle(20,Throttle.Timespan.Hour);
 
 	private static boolean ignoreError(Exception e, Scope.Session s, Http.Request r, Scope.Flash f, Scope.Params p, boolean is500){
-		String url = r.url.trim().toLowerCase();
+		String url = r==null || r.url==null ? "undefined":r.url.trim().toLowerCase();
 		int i = url.indexOf('?');
 		String obj=i>-1?url.substring(0, i):url;
 		String qry=i>-1?url.substring(i+1):"";
@@ -82,7 +82,9 @@ public class ServletWrapper extends HttpServlet implements ServletContextListene
 			*/
 		} else {
 			//500
-			if(e.getLocalizedMessage().equals("Unexpected Error") && url.equals("/files/upload")) return true;
+			if(
+			         e==null || e.getLocalizedMessage()==null ||
+                            e.getLocalizedMessage().equals("Unexpected Error") && url.equals("/files/upload")) return true;
 			
 			
 		}

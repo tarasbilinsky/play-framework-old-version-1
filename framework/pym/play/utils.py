@@ -242,10 +242,10 @@ def isTestFrameworkId( framework_id ):
     return (framework_id == 'test' or (framework_id.startswith('test-') and framework_id.__len__() >= 6 ))
 
 def java_path():
-    if not os.environ.has_key('JAVA_HOME'):
-        return "java"
-    else:
-        return os.path.normpath("%s/bin/java" % os.environ['JAVA_HOME'])
+    #if not os.environ.has_key('JAVA_HOME'):
+    #    return "java"
+    #else:
+    return os.path.normpath("%s/bin/java" % os.environ['JAVA_HOME8'])
 
 def getJavaVersion():
     sp = subprocess.Popen([java_path(), "-version"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
